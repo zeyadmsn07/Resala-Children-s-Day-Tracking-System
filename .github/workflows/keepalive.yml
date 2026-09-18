@@ -9,18 +9,34 @@ on:
 jobs:
   keepalive:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
 
     steps:
-      - name: Ping Supabase REST API
+      - name: Ping Supabase to keep database alive
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
+          # Query the staff_directory table with limit=0.
+          # This forces PostgREST to open a DB connection (keeping the
+          # free-tier project alive) without transferring any row data.
+          # A 200 with an empty array is the expected success response.
+          # If the table doesn't exist yet, PostgREST returns 404 — that
+          # still wakes the database, which is the whole point.
           response=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+            --max-time 120 \
+            "${SUPABASE_URL}/rest/v1/staff_directory?select=email&limit=0" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
 
           echo "Supabase responded with HTTP $response"
 
-          if [ "$response" -ne 200 ]; then
-            echo "::error::Keepalive ping failed with status $response"
+          # 200 = table exists, query succeeded
+          # 404 = table not created yet (still woke the DB)
+          # Both are acceptable for a keepalive ping.
+          if [ "$response" -eq 200 ] || [ "$response" -eq 404 ]; then
+            echo "Keepalive ping successful (HTTP $response)."
+          else
+            echo "::error::Keepalive ping failed with unexpected status $response"
             exit 1
           fi
