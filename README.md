@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Resala Children's Day Tracking System 🎈
 
-## Getting Started
+A mobile-first web application built to help Resala's facilitators seamlessly track student attendance, behavior, and academic progress across Children's Day modules without the hassle of spreadsheets.
 
-First, run the development server:
+## 🛠 Tech Stack
+
+- **Frontend:** Next.js 16 (App Router)
+- **Styling:** Tailwind CSS + `shadcn/ui`
+- **Charts:** Recharts
+- **Backend & Auth:** Supabase (PostgreSQL, Row Level Security)
+- **Deployment:** Vercel
+
+## 🚀 Getting Started
+
+Follow these steps to set up your local development environment.
+
+### 1. Clone the repository
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/zeyadmsn07/Resala-Children-s-Day-Tracking-System.git
+cd Resala-Children-s-Day-Tracking-System
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Run the automated setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+If you are using Mac, Linux, or WSL, make the script executable first:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+chmod +x setup.sh
+./setup.sh
+```
 
-## Learn More
+This script automatically enables `pnpm`, installs all project dependencies, and generates your `.env.local` file.
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Add your Environment Variables
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Open the newly created `.env.local` file in VS Code and paste the secure keys provided by the team lead:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+```
 
-## Deploy on Vercel
+⚠️ **CRITICAL:** Never commit your `.env.local` file to GitHub or share the Service Role Key publicly!
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 4. Start the Development Server
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. (Note: This command is for UI/frontend development and will not be used during database SQL tasks).
+
+## 🎨 Design & Theming
+
+- **Core Theme:** Clean, crisp white backgrounds with Resala's corporate shades of blue for primary navigation and active states.
+- **Children's Day Vibe:** Use bubbly yellows and energetic oranges for interactive elements (attentiveness sliders, behavior point buttons, and Recharts graphs) to keep the system feeling friendly and welcoming.
+
+## 🤖 Development Philosophy ("Vibe Coding")
+
+Our stack utilizes some advanced concepts (Server Actions, Supabase RLS). If you are new to these, do not stress.
+
+- **AI is Encouraged:** You are fully empowered to use Claude, Gemini, ChatGPT, Codex, or AntiGravity to generate boilerplate, figure out components, or squash bugs.
+- **Verify Everything:** Do not blindly copy-paste. You must test your UI in the browser, verify your database writes, and understand the core logic of what you are committing. You own the code!
+
+## 📋 Task Workflow & Communication
+
+Most tasks are isolated, but if your assignment relies on a backend table or UI screen being built first, please wait for the green light.
+
+- When you finish a task, test it locally.
+- Once verified, send this exact confirmation message in the team WhatsApp group: `Task XX: Done ✅`
+
+## 👥 Team
+
+- **Zeyad:** Team Lead, Backend Architecture & Deployment
+- **Omar Eslam:** Route Protection, Auth & Entity Management
+- **Omar Gouda:** UI/UX, Tracking Workflows & Analytics
