@@ -1,4 +1,4 @@
-# Resala Children's Day Tracking System 🎈
+# Resala Children's Day Tracking System
 
 A mobile-first web application built to help Resala's facilitators seamlessly track student attendance, behavior, and academic progress across Children's Day modules without the hassle of spreadsheets.
 
