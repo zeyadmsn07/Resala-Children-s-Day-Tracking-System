@@ -165,7 +165,7 @@ export default function ModuleTrackingPage() {
                           value={session.attendance}
                           onValueChange={(value) =>
                             updateSessionState(day, sessionNumber, {
-                              attendance: value,
+                              attendance: value ?? "Present",
                             })
                           }
                         >
