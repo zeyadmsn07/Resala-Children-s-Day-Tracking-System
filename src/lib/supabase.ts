@@ -1,6 +1,11 @@
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+/**
+ * Browser-side Supabase client using @supabase/ssr.
+ * Automatically reads and writes session cookies so requests
+ * carry the authenticated user's credentials to satisfy Row-Level Security (RLS).
+ */
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
