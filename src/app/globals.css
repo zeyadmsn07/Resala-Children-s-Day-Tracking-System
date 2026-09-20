@@ -152,6 +152,7 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
@@ -161,24 +162,51 @@
   html {
     @apply font-sans;
   }
+
+  button, a, input, select, textarea {
+    touch-action: manipulation;
+  }
 }
 
 @layer components {
-  /* Children's Day slider thumb */
+  /* Children's Day slider thumb - enlarged for thumb touch targets */
   [data-slot="slider-thumb"] {
     background-color: var(--child-yellow);
     border-color: var(--child-orange);
+    border-width: 2.5px;
+    width: 1.75rem !important;
+    height: 1.75rem !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    touch-action: none;
+    cursor: grab;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+
+  [data-slot="slider-thumb"]:active {
+    cursor: grabbing;
+    transform: scale(1.15);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
   }
 
   /* Children's Day behavior points */
   .behavior-point {
     background-color: var(--child-orange);
     color: white;
+    touch-action: manipulation;
+    transition: transform 0.1s ease, background-color 0.15s ease;
   }
 
-  .behavior-point:hover {
+  @media (hover: hover) {
+    .behavior-point:hover {
+      background-color: var(--child-yellow);
+      color: var(--foreground);
+    }
+  }
+
+  .behavior-point:active {
     background-color: var(--child-yellow);
     color: var(--foreground);
+    transform: scale(0.94);
   }
 
   /* Recharts */
@@ -188,5 +216,14 @@
 
   .recharts-line {
     stroke: var(--primary);
+  }
+
+  /* Utility to hide scrollbars on horizontal mobile tabs */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

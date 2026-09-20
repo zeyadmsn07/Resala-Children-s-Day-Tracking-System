@@ -155,12 +155,14 @@ export default function StaffPage() {
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="staff-email">Email</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="staff-email" className="text-sm font-medium">Email</Label>
                 <Input
                   id="staff-email"
                   type="email"
+                  autoComplete="email"
                   placeholder="newstaff@example.com"
+                  className="h-11 text-base"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -168,13 +170,13 @@ export default function StaffPage() {
               </div>
 
               {role === "director" ? (
-                <div className="space-y-2">
-                  <Label htmlFor="staff-role">Role</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="staff-role" className="text-sm font-medium">Role</Label>
                   <Select
                     value={assignedRole}
                     onValueChange={(value) => setAssignedRole(value ?? "")}
                   >
-                    <SelectTrigger id="staff-role" className="w-full">
+                    <SelectTrigger id="staff-role" className="w-full h-11 text-base sm:text-sm">
                       <SelectValue placeholder="Select a role" />
                     </SelectTrigger>
                     <SelectContent>
@@ -184,13 +186,13 @@ export default function StaffPage() {
                   </Select>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <Label>Role</Label>
-                  <Input value="Member" disabled />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium">Role</Label>
+                  <Input value="Member" disabled className="h-11 text-base" />
                 </div>
               )}
 
-              <Button type="submit" className="w-full" disabled={submitting}>
+              <Button type="submit" className="w-full h-12 text-base font-semibold shadow-xs active:scale-98 mt-2" disabled={submitting}>
                 {submitting ? "Adding…" : "Whitelist Staff Member"}
               </Button>
             </form>

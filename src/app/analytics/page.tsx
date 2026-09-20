@@ -173,27 +173,28 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Within-Day Trend */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>
+        <Card className="mb-6 border-border/80 shadow-xs">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base sm:text-lg">
               Average Attentiveness by Session
             </CardTitle>
 
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Sessions 1 through 4
             </p>
           </CardHeader>
 
-          <CardContent>
-            <div className="h-[320px] w-full">
+          <CardContent className="pt-2">
+            <div className="h-[260px] sm:h-[320px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={sessionTrend}>
+                <LineChart data={sessionTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
 
-                  <XAxis dataKey="session" />
+                  <XAxis dataKey="session" tick={{ fontSize: 11 }} />
 
                   <YAxis
                     domain={[0, 100]}
+                    tick={{ fontSize: 11 }}
                     tickFormatter={(value) => `${value}%`}
                   />
 
@@ -219,26 +220,27 @@ export default function AnalyticsPage() {
         </Card>
 
         {/* Week-over-Week Trend */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
+        <Card className="border-border/80 shadow-xs">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base sm:text-lg">
               Daily Assignment Averages
             </CardTitle>
 
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Days 1 through 4
             </p>
           </CardHeader>
 
-          <CardContent>
-            <div className="h-[320px] w-full">
+          <CardContent className="pt-2">
+            <div className="h-[260px] sm:h-[320px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={dailyTrend}>
+                <LineChart data={dailyTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
 
-                  <XAxis dataKey="day" />
+                  <XAxis dataKey="day" tick={{ fontSize: 11 }} />
 
                   <YAxis
+                    tick={{ fontSize: 11 }}
                     tickFormatter={(value) => `${value}`}
                   />
 

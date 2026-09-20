@@ -1,5 +1,5 @@
 
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono, Figtree } from "next/font/google"
 
 import "./globals.css"
@@ -28,6 +28,13 @@ export const metadata: Metadata = {
   description: "Resala Children's Day Tracking System",
 }
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#253487",
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -36,6 +43,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={cn(
         "h-full",
         "antialiased",

@@ -141,7 +141,7 @@ export default function DashboardPage() {
   return (
     <main className="min-h-screen bg-background px-4 py-8 sm:px-6">
       <div className="mx-auto w-full max-w-5xl">
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-primary sm:text-3xl">
               Dashboard
@@ -153,11 +153,15 @@ export default function DashboardPage() {
 
           {/* Add Student Dialog */}
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger render={<Button />}>
-              Add New Student
+            <DialogTrigger
+              render={
+                <Button className="h-11 sm:h-10 w-full sm:w-auto text-base sm:text-sm font-semibold shadow-xs active:scale-95" />
+              }
+            >
+              + Add New Student
             </DialogTrigger>
 
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Add New Student</DialogTitle>
                 <DialogDescription>
@@ -166,47 +170,51 @@ export default function DashboardPage() {
               </DialogHeader>
 
               <form onSubmit={handleAddStudent} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="student-name">Name</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="student-name" className="text-sm font-medium">Name</Label>
                   <Input
                     id="student-name"
                     placeholder="Student name"
+                    className="h-11 sm:h-10 text-base"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     required
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="student-age">Age</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="student-age" className="text-sm font-medium">Age</Label>
                   <Input
                     id="student-age"
                     type="number"
                     placeholder="Age"
+                    className="h-11 sm:h-10 text-base"
                     value={newAge}
                     onChange={(e) => setNewAge(e.target.value)}
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="student-phone">
+                <div className="space-y-1.5">
+                  <Label htmlFor="student-phone" className="text-sm font-medium">
                     Mother&apos;s Phone Number
                   </Label>
                   <Input
                     id="student-phone"
+                    type="tel"
                     placeholder="01XXXXXXXXX"
+                    className="h-11 sm:h-10 text-base"
                     value={newPhone}
                     onChange={(e) => setNewPhone(e.target.value)}
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>English Class</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium">English Class</Label>
                   <Select
                     value={newEnglishClassId}
                     onValueChange={(value) => setNewEnglishClassId(value ?? "")}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full h-11 sm:h-10 text-base sm:text-sm">
                       <SelectValue placeholder="Select English class" />
                     </SelectTrigger>
                     <SelectContent>
@@ -219,13 +227,13 @@ export default function DashboardPage() {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Project Class</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium">Project Class</Label>
                   <Select
                     value={newProjectClassId}
                     onValueChange={(value) => setNewProjectClassId(value ?? "")}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full h-11 sm:h-10 text-base sm:text-sm">
                       <SelectValue placeholder="Select Project class" />
                     </SelectTrigger>
                     <SelectContent>
@@ -238,11 +246,11 @@ export default function DashboardPage() {
                   </Select>
                 </div>
 
-                <DialogFooter>
-                  <DialogClose render={<Button variant="outline" />}>
+                <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 pt-2">
+                  <DialogClose render={<Button variant="outline" className="w-full sm:w-auto h-11 sm:h-10" />}>
                     Cancel
                   </DialogClose>
-                  <Button type="submit" disabled={submitting}>
+                  <Button type="submit" className="w-full sm:w-auto h-11 sm:h-10" disabled={submitting}>
                     {submitting ? "Adding…" : "Add Student"}
                   </Button>
                 </DialogFooter>
@@ -253,15 +261,19 @@ export default function DashboardPage() {
 
         {/* Student Tabs */}
         <Tabs defaultValue="english">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="english">English Tracks</TabsTrigger>
-            <TabsTrigger value="project">Project Tracks</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 h-11 sm:h-10">
+            <TabsTrigger value="english" className="text-sm font-semibold py-2">
+              English Tracks
+            </TabsTrigger>
+            <TabsTrigger value="project" className="text-sm font-semibold py-2">
+              Project Tracks
+            </TabsTrigger>
           </TabsList>
 
           {/* English Tab */}
-          <TabsContent value="english" className="mt-6">
+          <TabsContent value="english" className="mt-5">
             {loading ? (
-              <p className="text-muted-foreground">Loading students…</p>
+              <p className="text-muted-foreground py-6 text-center">Loading students…</p>
             ) : englishStudents.length === 0 ? (
               <Card>
                 <CardContent className="py-10 text-center">
@@ -271,24 +283,30 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
                 {englishStudents.map((student) => (
                   <Link key={student.id} href={`/students/${student.id}`}>
-                    <Card className="h-full cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md">
-                      <CardHeader>
-                        <CardTitle className="text-base">
-                          {student.name}
-                        </CardTitle>
+                    <Card className="h-full cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] border-border/80">
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base font-semibold">
+                            {student.name}
+                          </CardTitle>
+                          <span className="text-xs text-muted-foreground">→</span>
+                        </div>
                       </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground">
+                      <CardContent className="pt-0">
+                        <p className="text-sm font-medium text-primary">
                           {student.english_class?.name ?? "No class assigned"}
                         </p>
-                        {student.age && (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            Age: {student.age}
-                          </p>
-                        )}
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                          {student.age && <span>Age: {student.age}</span>}
+                          {student.mother_phone_number && (
+                            <span className="text-foreground">
+                              📞 {student.mother_phone_number}
+                            </span>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   </Link>
@@ -298,9 +316,9 @@ export default function DashboardPage() {
           </TabsContent>
 
           {/* Project Tab */}
-          <TabsContent value="project" className="mt-6">
+          <TabsContent value="project" className="mt-5">
             {loading ? (
-              <p className="text-muted-foreground">Loading students…</p>
+              <p className="text-muted-foreground py-6 text-center">Loading students…</p>
             ) : projectStudents.length === 0 ? (
               <Card>
                 <CardContent className="py-10 text-center">
@@ -310,24 +328,30 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
                 {projectStudents.map((student) => (
                   <Link key={student.id} href={`/students/${student.id}`}>
-                    <Card className="h-full cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md">
-                      <CardHeader>
-                        <CardTitle className="text-base">
-                          {student.name}
-                        </CardTitle>
+                    <Card className="h-full cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] border-border/80">
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base font-semibold">
+                            {student.name}
+                          </CardTitle>
+                          <span className="text-xs text-muted-foreground">→</span>
+                        </div>
                       </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground">
+                      <CardContent className="pt-0">
+                        <p className="text-sm font-medium text-primary">
                           {student.project_class?.name ?? "No class assigned"}
                         </p>
-                        {student.age && (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            Age: {student.age}
-                          </p>
-                        )}
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                          {student.age && <span>Age: {student.age}</span>}
+                          {student.mother_phone_number && (
+                            <span className="text-foreground">
+                              📞 {student.mother_phone_number}
+                            </span>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   </Link>

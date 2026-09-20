@@ -72,44 +72,52 @@ export default function LoginPage() {
         </div>
 
         {/* Auth Card */}
-        <Card>
+        <Card className="border-border/80 shadow-sm">
           <Tabs defaultValue="login">
             <CardHeader className="pb-2">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 h-11">
+                <TabsTrigger value="login" className="text-sm font-semibold py-2">
+                  Login
+                </TabsTrigger>
+                <TabsTrigger value="signup" className="text-sm font-semibold py-2">
+                  Sign Up
+                </TabsTrigger>
               </TabsList>
             </CardHeader>
 
-            <CardContent>
+            <CardContent className="pt-2">
               {/* Login Tab */}
               <TabsContent value="login">
                 <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="login-email" className="text-sm font-medium">Email</Label>
                     <Input
                       id="login-email"
                       type="email"
+                      autoComplete="email"
                       placeholder="you@example.com"
+                      className="h-11 text-base"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       required
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Password</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="login-password" className="text-sm font-medium">Password</Label>
                     <Input
                       id="login-password"
                       type="password"
+                      autoComplete="current-password"
                       placeholder="••••••••"
+                      className="h-11 text-base"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                       required
                     />
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button type="submit" className="w-full h-12 text-base font-semibold shadow-xs active:scale-98 mt-2" disabled={loading}>
                     {loading ? "Signing in…" : "Sign In"}
                   </Button>
                 </form>
@@ -118,31 +126,35 @@ export default function LoginPage() {
               {/* Sign Up Tab */}
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="signup-email" className="text-sm font-medium">Email</Label>
                     <Input
                       id="signup-email"
                       type="email"
+                      autoComplete="email"
                       placeholder="you@example.com"
+                      className="h-11 text-base"
                       value={signUpEmail}
                       onChange={(e) => setSignUpEmail(e.target.value)}
                       required
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="signup-password" className="text-sm font-medium">Password</Label>
                     <Input
                       id="signup-password"
                       type="password"
+                      autoComplete="new-password"
                       placeholder="••••••••"
+                      className="h-11 text-base"
                       value={signUpPassword}
                       onChange={(e) => setSignUpPassword(e.target.value)}
                       required
                     />
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button type="submit" className="w-full h-12 text-base font-semibold shadow-xs active:scale-98 mt-2" disabled={loading}>
                     {loading ? "Creating account…" : "Create Account"}
                   </Button>
                 </form>
