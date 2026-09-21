@@ -1,37 +1,24 @@
-
 import type { Metadata, Viewport } from "next"
-import { Geist, Geist_Mono, Figtree } from "next/font/google"
-
+import { Figtree } from "next/font/google"
 import "./globals.css"
-
-import { cn } from "@/lib/utils"
-import { Navigation } from "@/components/navigation"
 import { Toaster } from "@/components/ui/toast"
 
 const figtree = Figtree({
   subsets: ["latin"],
-  variable: "--font-sans",
-})
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-})
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: "--font-figtree",
+  display: "swap",
 })
 
 export const metadata: Metadata = {
   title: "Resala Children's Day Tracking System",
-  description: "Resala Children's Day Tracking System",
+  description: "Every child. Every session. Every step forward.",
 }
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  viewportFit: "cover",
   themeColor: "#253487",
 }
 
@@ -41,28 +28,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={cn(
-        "h-full",
-        "antialiased",
-        geistSans.variable,
-        geistMono.variable,
-        "font-sans",
-        figtree.variable
-      )}
-    >
-      <body className="min-h-full flex flex-col">
-        <Navigation />
-
-        <main className="flex-1">
-          {children}
-        </main>
-
+    <html lang="en" suppressHydrationWarning className={figtree.variable}>
+      <body className="min-h-dvh flex flex-col font-sans bg-background text-foreground antialiased">
+        {children}
         <Toaster />
       </body>
     </html>
   )
 }
-

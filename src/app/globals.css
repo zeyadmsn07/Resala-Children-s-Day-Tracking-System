@@ -8,7 +8,6 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
 
   --color-sidebar-ring: var(--sidebar-ring);
@@ -28,6 +27,35 @@
 
   --color-child-yellow: var(--child-yellow);
   --color-child-orange: var(--child-orange);
+  --color-project-soft: var(--project-soft);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-strong: var(--success-strong);
+
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-strong: var(--danger-strong);
+
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-strong: var(--warning-strong);
+
+  --color-tint-violet: var(--tint-violet);
+  --color-tint-violet-soft: var(--tint-violet-soft);
+  --color-tint-violet-strong: var(--tint-violet-strong);
+
+  --color-tint-teal: var(--tint-teal);
+  --color-tint-teal-soft: var(--tint-teal-soft);
+  --color-tint-teal-strong: var(--tint-teal-strong);
+
+  --color-tint-sky: var(--tint-sky);
+  --color-tint-sky-soft: var(--tint-sky-soft);
+  --color-tint-sky-strong: var(--tint-sky-strong);
+
+  --color-tint-pink: var(--tint-pink);
+  --color-tint-pink-soft: var(--tint-pink-soft);
+  --color-tint-pink-strong: var(--tint-pink-strong);
 
   --color-ring: var(--ring);
   --color-input: var(--input);
@@ -49,104 +77,95 @@
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 1.75rem;
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --font-sans: var(--font-figtree), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+
+  /* Warm tinted background instead of harsh sterile pure white */
+  --background: oklch(0.985 0.008 255);
+  --foreground: oklch(0.16 0.02 255);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.16 0.02 255);
 
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.16 0.02 255);
 
-  /* Resala blue */
-  --primary: oklch(0.42 0.16 255);
+  /* Resala deep blue */
+  --primary: oklch(0.38 0.16 258);
   --primary-foreground: oklch(1 0 0);
 
-  --secondary: oklch(0.96 0.02 255);
-  --secondary-foreground: oklch(0.30 0.10 255);
+  --secondary: oklch(0.96 0.025 255);
+  --secondary-foreground: oklch(0.30 0.12 258);
 
-  --muted: oklch(0.97 0.01 255);
-  --muted-foreground: oklch(0.50 0.03 255);
+  --muted: oklch(0.965 0.012 255);
+  --muted-foreground: oklch(0.48 0.03 255);
 
-  /* Children's Day */
+  /* Children's Day accents */
   --accent: oklch(0.90 0.18 95);
   --accent-foreground: oklch(0.25 0.06 95);
 
   --child-yellow: oklch(0.90 0.18 95);
   --child-orange: oklch(0.68 0.20 55);
+  --project-soft: oklch(0.96 0.05 60);
 
-  --destructive: oklch(0.577 0.245 27.325);
+  /* Meaning colors according to Section 7.1 */
+  --success: oklch(0.72 0.19 150);
+  --success-soft: oklch(0.96 0.05 150);
+  --success-strong: oklch(0.50 0.15 150);
+
+  --danger: oklch(0.64 0.22 25);
+  --danger-soft: oklch(0.95 0.04 25);
+  --danger-strong: oklch(0.50 0.19 25);
+
+  --warning: oklch(0.80 0.16 85);
+  --warning-soft: oklch(0.97 0.05 90);
+  --warning-strong: oklch(0.52 0.12 75);
+
+  /* Identity tints for cards & modules */
+  --tint-violet: oklch(0.70 0.16 295);
+  --tint-violet-soft: oklch(0.95 0.04 295);
+  --tint-violet-strong: oklch(0.50 0.18 295);
+
+  --tint-teal: oklch(0.70 0.16 190);
+  --tint-teal-soft: oklch(0.95 0.04 190);
+  --tint-teal-strong: oklch(0.50 0.18 190);
+
+  --tint-sky: oklch(0.70 0.16 240);
+  --tint-sky-soft: oklch(0.95 0.04 240);
+  --tint-sky-strong: oklch(0.50 0.18 240);
+
+  --tint-pink: oklch(0.70 0.16 350);
+  --tint-pink-soft: oklch(0.95 0.04 350);
+  --tint-pink-strong: oklch(0.50 0.18 350);
+
+  --destructive: var(--danger);
 
   --border: oklch(0.91 0.02 255);
   --input: oklch(0.91 0.02 255);
   --ring: oklch(0.42 0.16 255);
 
-  /* Recharts */
+  /* Theme tokens for charts */
   --chart-1: oklch(0.42 0.16 255);
-  --chart-2: oklch(0.75 0.18 85);
-  --chart-3: oklch(0.68 0.20 55);
-  --chart-4: oklch(0.55 0.15 255);
-  --chart-5: oklch(0.82 0.16 95);
+  --chart-2: oklch(0.68 0.20 55);
+  --chart-3: oklch(0.72 0.19 150);
+  --chart-4: oklch(0.90 0.18 95);
+  --chart-5: oklch(0.70 0.16 295);
 
-  --radius: 0.625rem;
+  --radius: 1rem;
 
-  --sidebar: oklch(0.985 0.01 255);
+  --sidebar: oklch(1 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.42 0.16 255);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.90 0.18 95);
-  --sidebar-accent-foreground: oklch(0.25 0.06 95);
-  --sidebar-border: oklch(0.91 0.02 255);
+  --sidebar-accent: oklch(0.96 0.02 255);
+  --sidebar-accent-foreground: oklch(0.42 0.16 255);
+  --sidebar-border: oklch(0.94 0.015 255);
   --sidebar-ring: oklch(0.42 0.16 255);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-
-  --destructive: oklch(0.704 0.191 22.216);
-
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
 }
 
 @layer base {
@@ -155,28 +174,62 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  body {
-    @apply bg-background text-foreground;
+  ::selection {
+    background-color: oklch(0.38 0.16 258 / 0.18);
+    color: oklch(0.38 0.16 258);
   }
 
   html {
-    @apply font-sans;
+    color-scheme: light;
+    caret-color: var(--primary);
+    @apply font-sans bg-background text-foreground;
   }
 
+  body {
+    @apply bg-background text-foreground min-h-dvh;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
+  }
+
+  /* Accessible touch manipulation across all interactives */
   button, a, input, select, textarea {
     touch-action: manipulation;
+  }
+
+  /* Refined, themed browser scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.38 0.16 258 / 0.15);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.38 0.16 258 / 0.35);
   }
 }
 
 @layer components {
-  /* Children's Day slider thumb - enlarged for thumb touch targets */
+  /* Soft surfaces and double-layer shadows matching Section 7.2 */
+  .shadow-soft {
+    box-shadow: 0 2px 4px oklch(0.38 0.16 258 / 0.03), 0 8px 24px oklch(0.38 0.16 258 / 0.06);
+  }
+
+  .shadow-soft-raised {
+    box-shadow: 0 4px 8px oklch(0.38 0.16 258 / 0.04), 0 14px 34px oklch(0.38 0.16 258 / 0.12);
+  }
+
+  /* Slider thumb */
   [data-slot="slider-thumb"] {
     background-color: var(--child-yellow);
     border-color: var(--child-orange);
-    border-width: 2.5px;
+    border-width: 3px;
     width: 1.75rem !important;
     height: 1.75rem !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
     touch-action: none;
     cursor: grab;
     transition: transform 0.1s ease, box-shadow 0.1s ease;
@@ -185,40 +238,65 @@
   [data-slot="slider-thumb"]:active {
     cursor: grabbing;
     transform: scale(1.15);
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   }
 
-  /* Children's Day behavior points */
-  .behavior-point {
-    background-color: var(--child-orange);
-    color: white;
-    touch-action: manipulation;
-    transition: transform 0.1s ease, background-color 0.15s ease;
-  }
-
-  @media (hover: hover) {
-    .behavior-point:hover {
-      background-color: var(--child-yellow);
-      color: var(--foreground);
+  /* Keyframe animations for Behavior Points */
+  @keyframes star-burst {
+    0% {
+      transform: translate(-50%, -50%) scale(0.3);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, -24px))) scale(1.2);
+      opacity: 0;
     }
   }
 
-  .behavior-point:active {
-    background-color: var(--child-yellow);
-    color: var(--foreground);
-    transform: scale(0.94);
+  @keyframes float-up {
+    0% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-28px);
+      opacity: 0;
+    }
   }
 
-  /* Recharts */
-  .recharts-cartesian-grid line {
-    stroke: var(--border);
+  @keyframes float-down {
+    0% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(24px);
+      opacity: 0;
+    }
   }
 
-  .recharts-line {
-    stroke: var(--primary);
+  .animate-star-burst {
+    animation: star-burst 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
-  /* Utility to hide scrollbars on horizontal mobile tabs */
+  .animate-float-up {
+    animation: float-up 550ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-float-down {
+    animation: float-down 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-star-burst,
+    .animate-float-up,
+    .animate-float-down {
+      animation: none !important;
+      display: none !important;
+    }
+  }
+
+  /* Utility to hide scrollbars */
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
