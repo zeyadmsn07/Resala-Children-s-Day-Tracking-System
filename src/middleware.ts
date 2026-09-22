@@ -45,6 +45,31 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Forward the verified user id to downstream Server Components so
+  // src/app/(app)/layout.tsx doesn't have to call getUser() a second time.
+  //
+  // Setting request.headers directly does NOT propagate to the Server
+  // Component render — Next.js only reads the header snapshot passed into
+  // NextResponse.next({ request: { headers } }) at the point it's called.
+  // So we rebuild the request headers with x-user-id added, then rebuild
+  // supabaseResponse from that, copying over any Set-Cookie headers Supabase
+  // already queued on the original supabaseResponse so the session refresh
+  // from getUser() above isn't lost.
+  if (user) {
+    const forwardedHeaders = new Headers(request.headers)
+    forwardedHeaders.set("x-user-id", user.id)
+
+    const existingSetCookies = supabaseResponse.headers.getSetCookie()
+
+    supabaseResponse = NextResponse.next({
+      request: { headers: forwardedHeaders },
+    })
+
+    existingSetCookies.forEach((cookieString) => {
+      supabaseResponse.headers.append("Set-Cookie", cookieString)
+    })
+  }
+
   return supabaseResponse
 }
 
