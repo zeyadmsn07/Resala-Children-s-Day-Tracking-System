@@ -98,6 +98,9 @@ export default function ModuleTrackingView() {
             behaviorPoints: row.behavior_points ?? 0,
             positivePoints: Math.max(0, row.behavior_points ?? 0),
             negativePoints: Math.max(0, -(row.behavior_points ?? 0)),
+            funDayFollowedInstructions: row.fun_day_followed_instructions ?? null,
+            funDayPlayedWellWithOthers: row.fun_day_played_well_with_others ?? null,
+            funDayStayedEngaged: row.fun_day_stayed_engaged ?? null,
           }
 
           if (row.daily_assignment_score !== null && row.daily_assignment_score !== undefined) {
@@ -182,19 +185,27 @@ export default function ModuleTrackingView() {
   async function handleSessionChange(sessionNumber: number, changes: Partial<SessionData>) {
     if (!currentModule) return
 
-    setAllDaysSessions((prev) => {
-      const dayData = { ...prev[activeDay] }
-      const current = dayData[sessionNumber] || {
-        attendance: null,
-        attentiveness: null,
-        behaviorPoints: 0,
-      }
-      const updated = { ...current, ...changes }
-      dayData[sessionNumber] = updated
+    // Compute the next value from state read here, not from inside the
+    // setState updater. Firing a network call from inside a functional
+    // updater is unsafe: React (in Strict Mode, which Next.js enables by
+    // default in dev) intentionally invokes updater functions twice to
+    // surface exactly this kind of side effect, which was doubling every
+    // autosave request.
+    const current = currentDaySessions[sessionNumber] || {
+      attendance: null,
+      attentiveness: null,
+      behaviorPoints: 0,
+    }
+    const updated = { ...current, ...changes }
 
-      // Autosave this session
-      setSaveStatus("saving")
-      upsertSession({
+    setAllDaysSessions((prev) => ({
+      ...prev,
+      [activeDay]: { ...prev[activeDay], [sessionNumber]: updated },
+    }))
+
+    setSaveStatus("saving")
+    try {
+      await upsertSession({
         student_id: studentId,
         module_id: currentModule.id,
         day_number: activeDay,
@@ -203,15 +214,15 @@ export default function ModuleTrackingView() {
         attentiveness_percentage: updated.attentiveness,
         behavior_points: updated.behaviorPoints,
         daily_assignment_score: dailyAssignmentScores[activeDay],
+        fun_day_followed_instructions: updated.funDayFollowedInstructions ?? null,
+        fun_day_played_well_with_others: updated.funDayPlayedWellWithOthers ?? null,
+        fun_day_stayed_engaged: updated.funDayStayedEngaged ?? null,
       })
-        .then(() => setSaveStatus("saved"))
-        .catch((err) => {
-          console.error("Session autosave error:", err)
-          setSaveStatus("failed")
-        })
-
-      return { ...prev, [activeDay]: dayData }
-    })
+      setSaveStatus("saved")
+    } catch (err) {
+      console.error("Session autosave error:", err instanceof Error ? err.message : err)
+      setSaveStatus("failed")
+    }
   }
 
   async function handleAssignmentScoreBlur(score: number | null) {

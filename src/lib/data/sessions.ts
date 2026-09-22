@@ -79,28 +79,25 @@ export async function upsertSession(payload: {
   attentiveness_percentage?: number | null
   behavior_points?: number
   daily_assignment_score?: number | null
+  fun_day_followed_instructions?: boolean | null
+  fun_day_played_well_with_others?: boolean | null
+  fun_day_stayed_engaged?: boolean | null
 }) {
-  const { data: existing } = await supabase
+  // Atomic upsert keyed on the composite unique constraint from the
+  // sessions table (student_id, module_id, day_number, session_number).
+  // A select-then-insert-or-update here is NOT safe: two calls that both
+  // check "does a row exist?" before either write completes (e.g. two
+  // fast toggles, or React Strict Mode's intentional double-invoke of
+  // functional state updaters in dev) can both decide to insert, and the
+  // second one fails the unique constraint. Upsert lets Postgres resolve
+  // the conflict atomically instead.
+  const { error } = await supabase
     .from("sessions")
-    .select("id")
-    .eq("student_id", payload.student_id)
-    .eq("module_id", payload.module_id)
-    .eq("day_number", payload.day_number)
-    .eq("session_number", payload.session_number)
-    .maybeSingle()
-
-  if (existing?.id) {
-    const { error } = await supabase
-      .from("sessions")
-      .update(payload)
-      .eq("id", existing.id)
-    if (error) throw error
-    return { ok: true }
-  } else {
-    const { error } = await supabase.from("sessions").insert(payload)
-    if (error) throw error
-    return { ok: true }
-  }
+    .upsert(payload, {
+      onConflict: "student_id,module_id,day_number,session_number",
+    })
+  if (error) throw error
+  return { ok: true }
 }
 
 export async function updateOverallModuleGrade(
