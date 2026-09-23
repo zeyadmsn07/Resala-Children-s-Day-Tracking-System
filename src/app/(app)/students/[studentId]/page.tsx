@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { getStudent, updateStudent, Student } from "@/lib/data/students"
 import { getClassOverview, ClassOverview } from "@/lib/data/classes"
-import { getModules, ModuleInfo } from "@/lib/data/sessions"
+import { getModules, getStudentTotalBehaviorPoints, ModuleInfo } from "@/lib/data/sessions"
 import { supabase } from "@/lib/supabase"
 import { StudentAvatar } from "@/components/student/avatar"
 import { BubbleToggle } from "@/components/access/bubble-toggle"
@@ -20,6 +20,7 @@ import {
   Copy01Icon,
   ArrowRight01Icon,
   Loading03Icon,
+  StarIcon,
 } from "@hugeicons/core-free-icons"
 
 export default function StudentProfilePage() {
@@ -35,16 +36,20 @@ export default function StudentProfilePage() {
   const [moduleStats, setModuleStats] = useState<
     Record<number, { daysLogged: number; avgAttentiveness: number | null; grade: number | null }>
   >({})
+  const [totalBehaviorPoints, setTotalBehaviorPoints] = useState<number>(0)
   const [loading, setLoading] = useState(true)
   const [editSheetOpen, setEditSheetOpen] = useState(false)
 
   async function loadData() {
     try {
-      const [std, cls, mods] = await Promise.all([
+      const [std, cls, mods, totalPoints] = await Promise.all([
         getStudent(studentId),
         getClassOverview(),
         getModules(),
+        getStudentTotalBehaviorPoints(studentId),
       ])
+
+      setTotalBehaviorPoints(totalPoints)
 
       if (std) {
         setStudent(std)
@@ -193,6 +198,24 @@ export default function StudentProfilePage() {
             <span>Skills:</span>
             <span>{student.project_class?.name || "Not assigned"}</span>
           </div>
+
+          {/* Total Behavior Points Chip — net across every module, day, and session */}
+          <div
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-bold ${
+              totalBehaviorPoints > 0
+                ? "bg-[oklch(0.96_0.05_150)] border-[oklch(0.72_0.19_150)]/30 text-[oklch(0.40_0.15_150)]"
+                : totalBehaviorPoints < 0
+                ? "bg-[oklch(0.95_0.04_25)] border-[oklch(0.64_0.22_25)]/30 text-[oklch(0.50_0.19_25)]"
+                : "bg-muted/60 border-border text-muted-foreground"
+            }`}
+            title="Total behavior points across all modules, days, and sessions"
+          >
+            <HugeiconsIcon icon={StarIcon} className="w-3.5 h-3.5" strokeWidth={2.2} />
+            <span>Total Behavior:</span>
+            <span className="font-mono">
+              {totalBehaviorPoints > 0 ? `+${totalBehaviorPoints}` : totalBehaviorPoints}
+            </span>
+          </div>
         </div>
 
         {/* Mother Phone Contact */}
@@ -247,9 +270,29 @@ export default function StudentProfilePage() {
 
       {/* Modules Section (Section 4.4: 4 Cards) */}
       <div className="space-y-3">
-        <h2 className="text-lg font-black text-foreground">
-          Academic Modules
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-black text-foreground">
+            Academic Modules
+          </h2>
+
+          {/* Total Behavior Points Summary Card */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-white border border-border/80 shadow-2xs">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Total Behavior
+            </span>
+            <span
+              className={`text-sm font-black font-mono tabular-nums ${
+                totalBehaviorPoints > 0
+                  ? "text-[oklch(0.50_0.15_150)]"
+                  : totalBehaviorPoints < 0
+                  ? "text-[oklch(0.50_0.19_25)]"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {totalBehaviorPoints > 0 ? `+${totalBehaviorPoints}` : totalBehaviorPoints}
+            </span>
+          </div>
+        </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
           {modules.map((mod) => {

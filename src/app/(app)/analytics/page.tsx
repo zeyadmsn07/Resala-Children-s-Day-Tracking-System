@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react"
 import { getClassOverview, ClassOverview } from "@/lib/data/classes"
 import { getAllStudents, Student } from "@/lib/data/students"
+import { getModules, ModuleInfo } from "@/lib/data/sessions"
 import { supabase } from "@/lib/supabase"
 import { StudentAvatar } from "@/components/student/avatar"
 import {
@@ -27,6 +28,7 @@ import Link from "next/link"
 
 export default function AnalyticsPage() {
   const [classes, setClasses] = useState<ClassOverview[]>([])
+  const [modules, setModules] = useState<ModuleInfo[]>([])
   const [students, setStudents] = useState<Student[]>([])
   const [sessions, setSessions] = useState<any[]>([])
   const [studentModules, setStudentModules] = useState<any[]>([])
@@ -34,18 +36,20 @@ export default function AnalyticsPage() {
 
   // Filters
   const [selectedClassId, setSelectedClassId] = useState<string>("all")
-  const [selectedModule, setSelectedModule] = useState<string>("all")
+  const [selectedModuleId, setSelectedModuleId] = useState<string>("all")
   const [selectedDay, setSelectedDay] = useState<string>("all")
 
   async function loadData() {
     try {
-      const [cls, stds, sessRes, modsRes] = await Promise.all([
+      const [cls, mods, stds, sessRes, modsRes] = await Promise.all([
         getClassOverview(),
+        getModules(),
         getAllStudents(),
         supabase.from("sessions").select("*"),
         supabase.from("student_modules").select("*"),
       ])
       setClasses(cls)
+      setModules(mods)
       setStudents(stds)
       setSessions(sessRes.data ?? [])
       setStudentModules(modsRes.data ?? [])
@@ -76,10 +80,21 @@ export default function AnalyticsPage() {
   const scopedSessions = useMemo(() => {
     return sessions.filter((s) => {
       if (!scopedStudentIds.has(s.student_id)) return false
+      if (selectedModuleId !== "all" && s.module_id !== selectedModuleId) return false
       if (selectedDay !== "all" && s.day_number !== Number(selectedDay)) return false
       return true
     })
-  }, [sessions, scopedStudentIds, selectedDay])
+  }, [sessions, scopedStudentIds, selectedModuleId, selectedDay])
+
+  // Grades (student_modules) in scope — filtered by module too, since a
+  // student's overall_project_grade is per module, not global.
+  const scopedStudentModules = useMemo(() => {
+    return studentModules.filter((sm) => {
+      if (!scopedStudentIds.has(sm.student_id)) return false
+      if (selectedModuleId !== "all" && sm.module_id !== selectedModuleId) return false
+      return true
+    })
+  }, [studentModules, scopedStudentIds, selectedModuleId])
 
   // Summary Metrics (Section 6.2)
   const metrics = useMemo(() => {
@@ -87,7 +102,6 @@ export default function AnalyticsPage() {
     let absent = 0
     let excused = 0
     const attnValues: number[] = []
-    let netBehavior = 0
     const assignmentScores: number[] = []
 
     for (const s of scopedSessions) {
@@ -102,7 +116,6 @@ export default function AnalyticsPage() {
         excused++
       }
 
-      if (s.behavior_points) netBehavior += s.behavior_points
       if (s.daily_assignment_score !== null && s.daily_assignment_score !== undefined) {
         assignmentScores.push(s.daily_assignment_score)
       }
@@ -121,9 +134,9 @@ export default function AnalyticsPage() {
         ? Math.round(assignmentScores.reduce((a, b) => a + b, 0) / assignmentScores.length)
         : null
 
-    // Project grades for students in scope
-    const grades = studentModules
-      .filter((sm) => scopedStudentIds.has(sm.student_id) && sm.overall_project_grade !== null)
+    // Project grades for students in scope (already filtered by module too)
+    const grades = scopedStudentModules
+      .filter((sm) => sm.overall_project_grade !== null)
       .map((sm) => sm.overall_project_grade as number)
 
     const avgGrade =
@@ -133,12 +146,11 @@ export default function AnalyticsPage() {
       studentsInView: scopedStudents.length,
       attendanceRate,
       avgAttentiveness,
-      netBehavior,
       avgAssignment,
       avgGrade,
       totalSessions: scopedSessions.length,
     }
-  }, [scopedSessions, scopedStudents, studentModules, scopedStudentIds])
+  }, [scopedSessions, scopedStudents, scopedStudentModules])
 
   // Chart 1: Attentiveness by Session (1 to 4)
   const sessionTrend = useMemo(() => {
@@ -240,6 +252,20 @@ export default function AnalyticsPage() {
             ))}
           </select>
 
+          {/* Module Filter */}
+          <select
+            value={selectedModuleId}
+            onChange={(e) => setSelectedModuleId(e.target.value)}
+            className="h-9 px-3 rounded-xl bg-muted/50 border border-input text-foreground font-semibold outline-hidden cursor-pointer"
+          >
+            <option value="all">All Modules</option>
+            {modules.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name || `Module ${m.module_number}`}
+              </option>
+            ))}
+          </select>
+
           {/* Day Filter */}
           <select
             value={selectedDay}
@@ -253,11 +279,12 @@ export default function AnalyticsPage() {
             <option value="4">Day 4</option>
           </select>
 
-          {selectedClassId !== "all" || selectedDay !== "all" ? (
+          {selectedClassId !== "all" || selectedModuleId !== "all" || selectedDay !== "all" ? (
             <button
               type="button"
               onClick={() => {
                 setSelectedClassId("all")
+                setSelectedModuleId("all")
                 setSelectedDay("all")
               }}
               className="text-xs font-bold text-destructive underline px-2 cursor-pointer ml-auto"
@@ -268,8 +295,8 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Summary Tiles (Section 6.3: 2 x 3 Grid) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      {/* Summary Tiles (Section 6.3) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div className="p-3.5 rounded-3xl bg-white border border-border shadow-soft text-center">
           <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
             Students
@@ -294,15 +321,6 @@ export default function AnalyticsPage() {
           </span>
           <span className="text-2xl font-black text-primary mt-1 block">
             {metrics.avgAttentiveness !== null ? `${metrics.avgAttentiveness}%` : "—"}
-          </span>
-        </div>
-
-        <div className="p-3.5 rounded-3xl bg-[oklch(0.96_0.05_60)] border border-[oklch(0.68_0.20_55)]/20 text-center">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[oklch(0.68_0.20_55)] block">
-            Net Behavior
-          </span>
-          <span className="text-2xl font-black text-[oklch(0.68_0.20_55)] mt-1 block">
-            {metrics.netBehavior > 0 ? `+${metrics.netBehavior}` : metrics.netBehavior}
           </span>
         </div>
 

@@ -61,6 +61,22 @@ export function AddStudentSheet({
   const englishClasses = classes.filter((c) => c.track === "English")
   const projectClasses = classes.filter((c) => c.track === "Project")
 
+  // Base UI's <Select.Value> renders the raw value string (the class id)
+  // unless it's told how to map that value to a label. These two helpers
+  // do that lookup against the classes list, falling back to a sensible
+  // placeholder if the id isn't found (e.g. classes hasn't loaded yet).
+  function englishClassLabel(value: unknown) {
+    if (!value) return "Select English class"
+    const match = englishClasses.find((c) => c.id === value)
+    return match ? match.name : "Select English class"
+  }
+
+  function projectClassLabel(value: unknown) {
+    if (!value) return "Select Skills class"
+    const match = projectClasses.find((c) => c.id === value)
+    return match ? match.name : "Select Skills class"
+  }
+
   function resetForm(keepClasses = false) {
     setName("")
     setAge("")
@@ -106,10 +122,10 @@ export function AddStudentSheet({
       return
     }
 
-    const assignedClass = classes.find(
-      (c) => c.id === englishClassId || c.id === projectClassId
-    )
-    const classLabel = assignedClass ? ` to ${assignedClass.name}` : ""
+    const assignedClass =
+      classes.find((c) => c.id === englishClassId) ??
+      classes.find((c) => c.id === projectClassId)
+    const classLabel = assignedClass?.name ? ` to ${assignedClass.name}` : ""
 
     toast.add({
       title: "Student Added",
@@ -202,7 +218,9 @@ export function AddStudentSheet({
                 onValueChange={(val) => setEnglishClassId(val ?? "")}
               >
                 <SelectTrigger className="w-full h-12 text-sm rounded-2xl">
-                  <SelectValue placeholder="Select English class" />
+                  <SelectValue placeholder="Select English class">
+                    {englishClassLabel}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">Not assigned</SelectItem>
@@ -224,7 +242,9 @@ export function AddStudentSheet({
                 onValueChange={(val) => setProjectClassId(val ?? "")}
               >
                 <SelectTrigger className="w-full h-12 text-sm rounded-2xl">
-                  <SelectValue placeholder="Select Skills class" />
+                  <SelectValue placeholder="Select Skills class">
+                    {projectClassLabel}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">Not assigned</SelectItem>

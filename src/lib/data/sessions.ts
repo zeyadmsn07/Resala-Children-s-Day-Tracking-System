@@ -70,6 +70,23 @@ export async function getStudentModuleData(studentId: string, moduleId: string) 
   }
 }
 
+/**
+ * Total behavior points for a student, summed across every module, day,
+ * and session (the sessions table stores one net `behavior_points` value
+ * per session row, so this is a straight sum over all of that student's
+ * rows regardless of module_id / day_number / session_number).
+ */
+export async function getStudentTotalBehaviorPoints(studentId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from("sessions")
+    .select("behavior_points")
+    .eq("student_id", studentId)
+
+  if (error || !data) return 0
+
+  return data.reduce((sum, row: any) => sum + (row.behavior_points || 0), 0)
+}
+
 export async function upsertSession(payload: {
   student_id: string
   module_id: string
