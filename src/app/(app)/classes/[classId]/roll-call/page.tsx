@@ -5,7 +5,8 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { getClass } from "@/lib/data/classes"
 import { getStudentsByClass, Student } from "@/lib/data/students"
-import { getModules, getSessionSlots, upsertSession } from "@/lib/data/sessions"
+import { getModules, upsertSession, getModuleDays, getRollCallSessions } from "@/lib/data/sessions"
+import { getActiveDay, todayInCairo } from "@/lib/domain/schedule"
 import { StudentAvatar } from "@/components/student/avatar"
 import { AttendanceControl, AttendanceValue } from "@/components/tracking/attendance-control"
 import { BehaviorCounter } from "@/components/tracking/behavior-counter"
@@ -17,10 +18,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ArrowLeft01Icon,
   CheckmarkCircle02Icon,
-  Cancel01Icon,
-  Time02Icon,
   FilterIcon,
-  Copy01Icon,
   Loading03Icon,
 } from "@hugeicons/core-free-icons"
 
@@ -40,10 +38,14 @@ export default function RollCallPage() {
   const [modules, setModules] = useState<{ id: string; module_number: number; name: string }[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Current session context
+  // Context State
   const [activeModuleNumber, setActiveModuleNumber] = useState(1)
   const [activeDayNumber, setActiveDayNumber] = useState(1)
   const [activeSessionNumber, setActiveSessionNumber] = useState(1)
+  
+  // Snapshot / Read-only enforcement
+  const [isReadOnly, setIsReadOnly] = useState(false)
+  const [displayDate, setDisplayDate] = useState<string>("")
 
   // Map of studentId -> SessionState
   const [sessionStates, setSessionStates] = useState<Record<string, StudentSessionState>>({})
@@ -54,21 +56,43 @@ export default function RollCallPage() {
   async function loadData() {
     try {
       const cls = await getClass(classId)
-      if (cls) {
-        setClassInfo(cls)
-        const [stds, mods] = await Promise.all([
-          getStudentsByClass(cls.id, cls.track),
-          getModules(),
-        ])
-        setStudents(stds)
-        setModules(mods)
+      if (!cls) return
+      
+      setClassInfo(cls)
+      const [stds, mods, days] = await Promise.all([
+        getStudentsByClass(cls.id, cls.track),
+        getModules(),
+        getModuleDays(),
+      ])
+      setStudents(stds)
+      setModules(mods)
 
-        // If Skills class, session is 2, 3 or 4
-        if (cls.track === "Project") {
-          setActiveSessionNumber(2)
-        } else {
-          setActiveSessionNumber(1)
+      // Auto-detect correct day/module
+      const today = todayInCairo()
+      const assignedToday = days.find((d) => d.session_date === today)
+
+      if (assignedToday) {
+        // Today is an active schedule day
+        setIsReadOnly(false)
+        setActiveModuleNumber(assignedToday.module_number)
+        setActiveDayNumber(assignedToday.day_number)
+        setDisplayDate(today)
+      } else {
+        // Today is not assigned -> Show previous Saturday's snapshot
+        setIsReadOnly(true)
+        const activeDayObj = getActiveDay(days)
+        if (activeDayObj) {
+          setActiveModuleNumber(activeDayObj.module_number)
+          setActiveDayNumber(activeDayObj.day_number)
+          setDisplayDate(activeDayObj.session_date)
         }
+      }
+
+      // Default sessions by track
+      if (cls.track === "Project") {
+        setActiveSessionNumber(2)
+      } else {
+        setActiveSessionNumber(1)
       }
     } catch (err) {
       console.error("Failed to load roll call data:", err)
@@ -77,18 +101,45 @@ export default function RollCallPage() {
     }
   }
 
+  // Load Base Application logic on mount
   useEffect(() => {
     loadData()
   }, [classId])
+
+  // Fetch true attendance states whenever the slot changes
+  useEffect(() => {
+    async function fetchSlotRecords() {
+      const activeModule = modules.find((m) => m.module_number === activeModuleNumber)
+      if (!activeModule || students.length === 0) return
+
+      setSaveStatus("saving")
+      const records = await getRollCallSessions(
+        students.map((s) => s.id),
+        activeModule.id,
+        activeDayNumber,
+        activeSessionNumber
+      )
+
+      const loadedStates: Record<string, StudentSessionState> = {}
+      records.forEach((row) => {
+        loadedStates[row.student_id] = {
+          attendance: row.attendance_status as AttendanceValue,
+          attentiveness: row.attentiveness_percentage,
+          behaviorPoints: row.behavior_points || 0,
+        }
+      })
+      setSessionStates(loadedStates)
+      setSaveStatus("saved")
+    }
+
+    fetchSlotRecords()
+  }, [activeModuleNumber, activeDayNumber, activeSessionNumber, students, modules])
 
   const activeModule = modules.find((m) => m.module_number === activeModuleNumber) || modules[0]
 
   // Counts
   const { presentCount, absentCount, excusedCount, unmarkedCount } = useMemo(() => {
-    let p = 0
-    let a = 0
-    let e = 0
-    let u = 0
+    let p = 0, a = 0, e = 0, u = 0
     for (const student of students) {
       const state = sessionStates[student.id]?.attendance
       if (state === "Present") p++
@@ -102,7 +153,7 @@ export default function RollCallPage() {
   const totalMarked = presentCount + absentCount + excusedCount
 
   async function saveStudentRow(studentId: string, state: StudentSessionState) {
-    if (!activeModule) return
+    if (isReadOnly || !activeModule) return
     setSaveStatus("saving")
     try {
       await upsertSession({
@@ -122,12 +173,9 @@ export default function RollCallPage() {
   }
 
   function handleUpdateStudent(studentId: string, changes: Partial<StudentSessionState>) {
+    if (isReadOnly) return
     setSessionStates((prev) => {
-      const current = prev[studentId] || {
-        attendance: null,
-        attentiveness: null,
-        behaviorPoints: 0,
-      }
+      const current = prev[studentId] || { attendance: null, attentiveness: null, behaviorPoints: 0 }
       const updated = { ...current, ...changes }
       saveStudentRow(studentId, updated)
       return { ...prev, [studentId]: updated }
@@ -135,7 +183,7 @@ export default function RollCallPage() {
   }
 
   function handleMarkAllPresent() {
-    if (!activeModule) return
+    if (isReadOnly || !activeModule) return
     let markedCount = 0
 
     const updated = { ...sessionStates }
@@ -194,10 +242,17 @@ export default function RollCallPage() {
           <HugeiconsIcon icon={ArrowLeft01Icon} className="w-4 h-4" />
           <span>{classInfo.name}</span>
         </Link>
-        <SaveStatus status={saveStatus} />
+
+        {isReadOnly ? (
+          <div className="px-3 py-1 text-xs font-bold bg-muted text-muted-foreground rounded-full border border-border">
+            Read-Only
+          </div>
+        ) : (
+          <SaveStatus status={saveStatus} />
+        )}
       </div>
 
-      {/* Session Title & Pills (Section 5.1) */}
+      {/* Session Title & Pills */}
       <div className="p-4 rounded-3xl bg-white border border-border/80 shadow-soft space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
@@ -205,7 +260,11 @@ export default function RollCallPage() {
               Module {activeModuleNumber} · Day {activeDayNumber}
             </h1>
             <p className="text-xs text-muted-foreground font-medium mt-0.5">
-              {isEnglish ? "Session 1 · English Class" : "Skills Class Sessions"}
+              {isReadOnly 
+                ? `Read-Only Snapshot (${displayDate})`
+                : isEnglish 
+                  ? "Session 1 · English Class" 
+                  : "Skills Class Sessions"}
             </p>
           </div>
 
@@ -234,33 +293,19 @@ export default function RollCallPage() {
           )}
         </div>
 
-        {/* Tinted Summary Count Tiles (Section 5.1) */}
+        {/* Tinted Summary Count Tiles */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <div className="p-3 rounded-2xl bg-[oklch(0.96_0.05_150)] border border-[oklch(0.72_0.19_150)]/30 text-center">
-            <span className="block text-xs font-bold text-[oklch(0.40_0.15_150)] uppercase">
-              Present
-            </span>
-            <span className="text-2xl font-black text-[oklch(0.35_0.15_150)] tabular-nums">
-              {presentCount}
-            </span>
+            <span className="block text-xs font-bold text-[oklch(0.40_0.15_150)] uppercase">Present</span>
+            <span className="text-2xl font-black text-[oklch(0.35_0.15_150)] tabular-nums">{presentCount}</span>
           </div>
-
           <div className="p-3 rounded-2xl bg-[oklch(0.95_0.04_25)] border border-[oklch(0.64_0.22_25)]/30 text-center">
-            <span className="block text-xs font-bold text-[oklch(0.50_0.19_25)] uppercase">
-              Absent
-            </span>
-            <span className="text-2xl font-black text-[oklch(0.45_0.19_25)] tabular-nums">
-              {absentCount}
-            </span>
+            <span className="block text-xs font-bold text-[oklch(0.50_0.19_25)] uppercase">Absent</span>
+            <span className="text-2xl font-black text-[oklch(0.45_0.19_25)] tabular-nums">{absentCount}</span>
           </div>
-
           <div className="p-3 rounded-2xl bg-[oklch(0.97_0.05_90)] border border-[oklch(0.80_0.16_85)]/30 text-center">
-            <span className="block text-xs font-bold text-[oklch(0.45_0.12_75)] uppercase">
-              Excused
-            </span>
-            <span className="text-2xl font-black text-[oklch(0.40_0.12_75)] tabular-nums">
-              {excusedCount}
-            </span>
+            <span className="block text-xs font-bold text-[oklch(0.45_0.12_75)] uppercase">Excused</span>
+            <span className="text-2xl font-black text-[oklch(0.40_0.12_75)] tabular-nums">{excusedCount}</span>
           </div>
         </div>
 
@@ -268,66 +313,46 @@ export default function RollCallPage() {
         <div>
           <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground mb-1.5">
             <span>Progress</span>
-            <span>
-              {totalMarked} of {students.length} marked
-            </span>
+            <span>{totalMarked} of {students.length} marked</span>
           </div>
           <div className="w-full h-2.5 rounded-full bg-muted overflow-hidden flex">
-            <div
-              className="bg-[oklch(0.72_0.19_150)] transition-all duration-300"
-              style={{
-                width: `${students.length ? (presentCount / students.length) * 100 : 0}%`,
-              }}
-            />
-            <div
-              className="bg-[oklch(0.64_0.22_25)] transition-all duration-300"
-              style={{
-                width: `${students.length ? (absentCount / students.length) * 100 : 0}%`,
-              }}
-            />
-            <div
-              className="bg-[oklch(0.80_0.16_85)] transition-all duration-300"
-              style={{
-                width: `${students.length ? (excusedCount / students.length) * 100 : 0}%`,
-              }}
-            />
+            <div className="bg-[oklch(0.72_0.19_150)] transition-all duration-300" style={{ width: `${students.length ? (presentCount / students.length) * 100 : 0}%` }} />
+            <div className="bg-[oklch(0.64_0.22_25)] transition-all duration-300" style={{ width: `${students.length ? (absentCount / students.length) * 100 : 0}%` }} />
+            <div className="bg-[oklch(0.80_0.16_85)] transition-all duration-300" style={{ width: `${students.length ? (excusedCount / students.length) * 100 : 0}%` }} />
           </div>
         </div>
 
-        {/* Fast Entry Actions */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/60">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleMarkAllPresent}
-            className="rounded-xl text-xs font-bold gap-1.5"
-          >
-            <HugeiconsIcon icon={CheckmarkCircle02Icon} className="w-4 h-4 text-[oklch(0.72_0.19_150)]" />
-            <span>Mark All Unmarked Present</span>
-          </Button>
-
-          <Button
-            type="button"
-            variant={showUnmarkedOnly ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setShowUnmarkedOnly(!showUnmarkedOnly)}
-            className="rounded-xl text-xs font-bold gap-1.5"
-          >
-            <HugeiconsIcon icon={FilterIcon} className="w-4 h-4" />
-            <span>{showUnmarkedOnly ? "Show all students" : "Unmarked only"}</span>
-          </Button>
-        </div>
+        {/* Fast Entry Actions - Hidden when Read-Only */}
+        {!isReadOnly && (
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/60">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleMarkAllPresent}
+              className="rounded-xl text-xs font-bold gap-1.5"
+            >
+              <HugeiconsIcon icon={CheckmarkCircle02Icon} className="w-4 h-4 text-[oklch(0.72_0.19_150)]" />
+              <span>Mark All Unmarked Present</span>
+            </Button>
+            <Button
+              type="button"
+              variant={showUnmarkedOnly ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setShowUnmarkedOnly(!showUnmarkedOnly)}
+              className="rounded-xl text-xs font-bold gap-1.5"
+            >
+              <HugeiconsIcon icon={FilterIcon} className="w-4 h-4" />
+              <span>{showUnmarkedOnly ? "Show all students" : "Unmarked only"}</span>
+            </Button>
+          </div>
+        )}
       </div>
 
-      {/* Student Rows (Section 5.1: 2-tap fast entry) */}
+      {/* Student Rows */}
       <div className="space-y-3">
         {displayedStudents.map((s) => {
-          const state = sessionStates[s.id] || {
-            attendance: null,
-            attentiveness: null,
-            behaviorPoints: 0,
-          }
+          const state = sessionStates[s.id] || { attendance: null, attentiveness: null, behaviorPoints: 0 }
           const isExpanded = expandedStudentId === s.id
 
           return (
@@ -342,16 +367,13 @@ export default function RollCallPage() {
                 <div className="flex items-center gap-3 min-w-0">
                   <StudentAvatar id={s.id} name={s.name} size={40} />
                   <div className="min-w-0">
-                    <h3 className="text-sm sm:text-base font-bold text-foreground truncate">
-                      {s.name}
-                    </h3>
+                    <h3 className="text-sm sm:text-base font-bold text-foreground truncate">{s.name}</h3>
                     <p className="text-[11px] text-muted-foreground">
                       {s.student_code || `S-${s.id.slice(0, 4).toUpperCase()}`}
                     </p>
                   </div>
                 </div>
 
-                {/* Status indicator pill if marked */}
                 {state.attendance && (
                   <button
                     type="button"
@@ -363,22 +385,20 @@ export default function RollCallPage() {
                 )}
               </div>
 
-              {/* Attendance Segmented Control */}
-              <AttendanceControl
-                value={state.attendance}
-                onChange={(attendance) => {
-                  handleUpdateStudent(s.id, { attendance })
-                  // Auto expand row when attendance is chosen
-                  if (attendance) {
-                    setExpandedStudentId(s.id)
-                  }
-                }}
-              />
+              {/* Prevent interaction organically if read-only */}
+              <div className={isReadOnly ? "pointer-events-none opacity-80" : ""}>
+                <AttendanceControl
+                  value={state.attendance}
+                  onChange={(attendance) => {
+                    handleUpdateStudent(s.id, { attendance })
+                    if (attendance && !isReadOnly) setExpandedStudentId(s.id)
+                  }}
+                />
+              </div>
 
-              {/* Expanded details: Quick Attentiveness Chips & Behavior */}
+              {/* Expanded details */}
               {isExpanded && (
                 <div className="pt-4 mt-3 border-t border-border/50 space-y-4 animate-in fade-in-0 duration-150">
-                  {/* Quick Attentiveness Chips (Section 5.1: Low 30, Okay 60, Great 90) */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -388,7 +408,7 @@ export default function RollCallPage() {
                         {state.attentiveness !== null ? `${state.attentiveness}%` : "Not rated"}
                       </span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className={`grid grid-cols-3 gap-2 ${isReadOnly ? "pointer-events-none opacity-80" : ""}`}>
                       {[
                         { label: "Low (30%)", val: 30 },
                         { label: "Okay (60%)", val: 60 },
@@ -397,8 +417,11 @@ export default function RollCallPage() {
                         <button
                           key={chip.val}
                           type="button"
+                          disabled={isReadOnly}
                           onClick={() => handleUpdateStudent(s.id, { attentiveness: chip.val })}
-                          className={`py-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer ${
+                          className={`py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                            isReadOnly ? "cursor-not-allowed" : "cursor-pointer"
+                          } ${
                             state.attentiveness === chip.val
                               ? "bg-primary text-white shadow-xs"
                               : "bg-muted/70 text-foreground hover:bg-secondary"
@@ -410,14 +433,13 @@ export default function RollCallPage() {
                     </div>
                   </div>
 
-                  {/* Behavior Buttons */}
-                  <BehaviorCounter
-                    positiveCount={Math.max(0, state.behaviorPoints)}
-                    negativeCount={Math.max(0, -state.behaviorPoints)}
-                    onChange={({ net }) =>
-                      handleUpdateStudent(s.id, { behaviorPoints: net })
-                    }
-                  />
+                  <div className={isReadOnly ? "pointer-events-none opacity-80" : ""}>
+                    <BehaviorCounter
+                      positiveCount={Math.max(0, state.behaviorPoints)}
+                      negativeCount={Math.max(0, -state.behaviorPoints)}
+                      onChange={({ net }) => handleUpdateStudent(s.id, { behaviorPoints: net })}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -425,14 +447,14 @@ export default function RollCallPage() {
         })}
       </div>
 
-      {/* Sticky Bottom Footer (Section 5.1: Done bar) */}
+      {/* Sticky Bottom Footer */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-border p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-soft-raised">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
           <div className="text-xs sm:text-sm font-bold text-foreground">
             <span className="text-[oklch(0.50_0.15_150)]">{presentCount} present</span>
             {" · "}
             <span className="text-[oklch(0.50_0.19_25)]">{absentCount} absent</span>
-            {unmarkedCount > 0 && (
+            {unmarkedCount > 0 && !isReadOnly && (
               <>
                 {" · "}
                 <span className="text-muted-foreground">{unmarkedCount} unmarked</span>
@@ -443,13 +465,13 @@ export default function RollCallPage() {
           <Button
             type="button"
             onClick={() => {
-              if (unmarkedCount > 0) {
+              if (!isReadOnly && unmarkedCount > 0) {
                 toast.add({
                   title: "Session Saved",
                   description: `${totalMarked} students logged. ${unmarkedCount} remain unmarked.`,
                   type: "info",
                 })
-              } else {
+              } else if (!isReadOnly) {
                 toast.add({
                   title: "Roll Call Complete",
                   description: "All students have been logged.",
@@ -458,9 +480,11 @@ export default function RollCallPage() {
               }
               router.push(`/classes/${classId}`)
             }}
-            className="h-12 px-8 rounded-2xl font-bold bg-primary text-white shadow-soft active:scale-98"
+            className={`h-12 px-8 rounded-2xl font-bold text-white shadow-soft active:scale-98 ${
+              isReadOnly ? "bg-muted-foreground" : "bg-primary"
+            }`}
           >
-            Done
+            {isReadOnly ? "Close" : "Done"}
           </Button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase"
 import { SlotInfo } from "@/components/tracking/session-accordion"
+import { getPreviousSaturday, getUpcomingSaturday, ModuleDay } from "../domain/schedule"
 
 export type { SlotInfo }
 
@@ -31,6 +32,54 @@ export async function getModules(): Promise<ModuleInfo[]> {
     ]
   }
   return data as ModuleInfo[]
+}
+
+/**
+ * Fetches the global schedule. If empty, falls back to the exact required rule:
+ * Previous Saturday = Mod 1 Day 1 (Snapshot)
+ * Upcoming Saturday = Mod 1 Day 2 (Target)
+ */
+export async function getModuleDays(): Promise<ModuleDay[]> {
+  const { data, error } = await supabase
+    .from("module_days")
+    .select("module_number, day_number, session_date")
+    .order("session_date", { ascending: true })
+
+  if (!error && data && data.length > 0) {
+    return data as ModuleDay[]
+  }
+
+  return [
+    { module_number: 1, day_number: 1, session_date: getPreviousSaturday() },
+    { module_number: 1, day_number: 2, session_date: getUpcomingSaturday() },
+  ]
+}
+
+/**
+ * Fetches existing attendance data for a specific slot to hydrate the roll-call page.
+ */
+export async function getRollCallSessions(
+  studentIds: string[],
+  moduleId: string,
+  dayNumber: number,
+  sessionNumber: number
+) {
+  if (!studentIds || studentIds.length === 0) return []
+
+  const { data, error } = await supabase
+    .from("sessions")
+    .select("student_id, attendance_status, attentiveness_percentage, behavior_points")
+    .in("student_id", studentIds)
+    .eq("module_id", moduleId)
+    .eq("day_number", dayNumber)
+    .eq("session_number", sessionNumber)
+
+  if (error) {
+    console.error("Failed to fetch roll call sessions:", error)
+    return []
+  }
+
+  return data || []
 }
 
 export async function getSessionSlots(): Promise<SlotInfo[]> {
@@ -70,12 +119,6 @@ export async function getStudentModuleData(studentId: string, moduleId: string) 
   }
 }
 
-/**
- * Total behavior points for a student, summed across every module, day,
- * and session (the sessions table stores one net `behavior_points` value
- * per session row, so this is a straight sum over all of that student's
- * rows regardless of module_id / day_number / session_number).
- */
 export async function getStudentTotalBehaviorPoints(studentId: string): Promise<number> {
   const { data, error } = await supabase
     .from("sessions")
@@ -100,14 +143,6 @@ export async function upsertSession(payload: {
   fun_day_played_well_with_others?: boolean | null
   fun_day_stayed_engaged?: boolean | null
 }) {
-  // Atomic upsert keyed on the composite unique constraint from the
-  // sessions table (student_id, module_id, day_number, session_number).
-  // A select-then-insert-or-update here is NOT safe: two calls that both
-  // check "does a row exist?" before either write completes (e.g. two
-  // fast toggles, or React Strict Mode's intentional double-invoke of
-  // functional state updaters in dev) can both decide to insert, and the
-  // second one fails the unique constraint. Upsert lets Postgres resolve
-  // the conflict atomically instead.
   const { error } = await supabase
     .from("sessions")
     .upsert(payload, {

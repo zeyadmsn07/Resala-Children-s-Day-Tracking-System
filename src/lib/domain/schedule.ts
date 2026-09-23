@@ -4,9 +4,7 @@ export type ModuleDay = {
   session_date: string // "YYYY-MM-DD"
 }
 
-/**
- * Returns current date formatted as YYYY-MM-DD in the Africa/Cairo timezone.
- */
+
 export function todayInCairo(now = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "Africa/Cairo",
@@ -14,6 +12,26 @@ export function todayInCairo(now = new Date()): string {
     month: "2-digit",
     day: "2-digit",
   }).format(now)
+}
+
+
+export function getUpcomingSaturday(now = new Date()): string {
+  const d = new Date(now.toLocaleString("en-US", { timeZone: "Africa/Cairo" }))
+  const day = d.getDay()
+  const diff = day === 6 ? 0 : 6 - day
+  d.setDate(d.getDate() + diff)
+  return todayInCairo(d)
+}
+
+/**
+ * Calculates the exact date of the previous Saturday
+ */
+export function getPreviousSaturday(now = new Date()): string {
+  const d = new Date(now.toLocaleString("en-US", { timeZone: "Africa/Cairo" }))
+  const day = d.getDay()
+  const diff = day === 6 ? 7 : day + 1 
+  d.setDate(d.getDate() - diff)
+  return todayInCairo(d)
 }
 
 /**
@@ -33,9 +51,6 @@ export function getGreeting(): string {
   return "Good evening,"
 }
 
-/**
- * Determines the active day conforming to UI_SPEC-2 section 8.5.
- */
 export function getActiveDay(days: ModuleDay[]): ModuleDay | null {
   if (!days || days.length === 0) return null
   const today = todayInCairo()
