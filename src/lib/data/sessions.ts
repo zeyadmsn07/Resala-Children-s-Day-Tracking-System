@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase"
 import { SlotInfo } from "@/components/tracking/session-accordion"
-import { getPreviousSaturday, getUpcomingSaturday, ModuleDay } from "../domain/schedule"
+import { buildDefaultSchedule, mergeSchedules, ModuleDay } from "../domain/schedule"
 
 export type { SlotInfo }
 
@@ -35,24 +35,34 @@ export async function getModules(): Promise<ModuleInfo[]> {
 }
 
 /**
- * Fetches the global schedule. If empty, falls back to the exact required rule:
- * Previous Saturday = Mod 1 Day 1 (Snapshot)
- * Upcoming Saturday = Mod 1 Day 2 (Target)
+ * Fetches the global schedule.
+ * module_days stores module_id (not module_number), so the module number is
+ * read through the modules relation. Rows from the database always win; any
+ * missing days are filled from the fixed-anchor default schedule so the roll
+ * call keeps advancing every Saturday even if the table is empty or partial.
  */
 export async function getModuleDays(): Promise<ModuleDay[]> {
   const { data, error } = await supabase
     .from("module_days")
-    .select("module_number, day_number, session_date")
+    .select("day_number, session_date, modules(module_number)")
     .order("session_date", { ascending: true })
 
-  if (!error && data && data.length > 0) {
-    return data as ModuleDay[]
+  if (error) {
+    console.error("Failed to fetch module_days, using default schedule:", error)
   }
 
-  return [
-    { module_number: 1, day_number: 1, session_date: getPreviousSaturday() },
-    { module_number: 1, day_number: 2, session_date: getUpcomingSaturday() },
-  ]
+  const fromDb: ModuleDay[] = []
+  for (const row of (data ?? []) as any[]) {
+    const mod = Array.isArray(row.modules) ? row.modules[0] : row.modules
+    if (!mod || typeof mod.module_number !== "number") continue
+    fromDb.push({
+      module_number: mod.module_number,
+      day_number: row.day_number,
+      session_date: row.session_date,
+    })
+  }
+
+  return mergeSchedules(fromDb, buildDefaultSchedule())
 }
 
 /**
