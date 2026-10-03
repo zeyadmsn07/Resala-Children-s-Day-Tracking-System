@@ -6,7 +6,7 @@ import Link from "next/link"
 import { getClass } from "@/lib/data/classes"
 import { getStudentsByClass, Student } from "@/lib/data/students"
 import { getModules, upsertSession, getModuleDays, getRollCallSessions } from "@/lib/data/sessions"
-import { getActiveDay, todayInCairo } from "@/lib/domain/schedule"
+import { ModuleDay, resolveActiveContext, todayInCairo } from "@/lib/domain/schedule"
 import { StudentAvatar } from "@/components/student/avatar"
 import { AttendanceControl, AttendanceValue } from "@/components/tracking/attendance-control"
 import { BehaviorCounter } from "@/components/tracking/behavior-counter"
@@ -38,14 +38,18 @@ export default function RollCallPage() {
   const [modules, setModules] = useState<{ id: string; module_number: number; name: string }[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Context State
-  const [activeModuleNumber, setActiveModuleNumber] = useState(1)
-  const [activeDayNumber, setActiveDayNumber] = useState(1)
+  // Schedule + clock. The active module/day is derived from these, never stored,
+  // so it always follows the real date.
+  const [scheduleDays, setScheduleDays] = useState<ModuleDay[]>([])
+  const [today, setToday] = useState<string>(() => todayInCairo())
   const [activeSessionNumber, setActiveSessionNumber] = useState(1)
-  
-  // Snapshot / Read-only enforcement
-  const [isReadOnly, setIsReadOnly] = useState(false)
-  const [displayDate, setDisplayDate] = useState<string>("")
+
+  const context = useMemo(() => resolveActiveContext(scheduleDays, today), [scheduleDays, today])
+  const activeModuleNumber = context?.module_number ?? 1
+  const activeDayNumber = context?.day_number ?? 1
+  // Snapshot mode: any date that is not an assigned session day is view-only.
+  const isReadOnly = context ? context.isReadOnly : true
+  const displayDate = context?.session_date ?? ""
 
   // Map of studentId -> SessionState
   const [sessionStates, setSessionStates] = useState<Record<string, StudentSessionState>>({})
@@ -57,7 +61,7 @@ export default function RollCallPage() {
     try {
       const cls = await getClass(classId)
       if (!cls) return
-      
+
       setClassInfo(cls)
       const [stds, mods, days] = await Promise.all([
         getStudentsByClass(cls.id, cls.track),
@@ -66,27 +70,8 @@ export default function RollCallPage() {
       ])
       setStudents(stds)
       setModules(mods)
-
-      // Auto-detect correct day/module
-      const today = todayInCairo()
-      const assignedToday = days.find((d) => d.session_date === today)
-
-      if (assignedToday) {
-        // Today is an active schedule day
-        setIsReadOnly(false)
-        setActiveModuleNumber(assignedToday.module_number)
-        setActiveDayNumber(assignedToday.day_number)
-        setDisplayDate(today)
-      } else {
-        // Today is not assigned -> Show previous Saturday's snapshot
-        setIsReadOnly(true)
-        const activeDayObj = getActiveDay(days)
-        if (activeDayObj) {
-          setActiveModuleNumber(activeDayObj.module_number)
-          setActiveDayNumber(activeDayObj.day_number)
-          setDisplayDate(activeDayObj.session_date)
-        }
-      }
+      setScheduleDays(days)
+      setToday(todayInCairo())
 
       // Default sessions by track
       if (cls.track === "Project") {
@@ -106,8 +91,28 @@ export default function RollCallPage() {
     loadData()
   }, [classId])
 
+  // Keep the date live: if the page stays open across midnight (Cairo) or the
+  // tab comes back to the foreground, re-check the date so the roll call
+  // switches to the new day on its own.
+  useEffect(() => {
+    const refreshToday = () => setToday(todayInCairo())
+    const interval = setInterval(refreshToday, 30_000)
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshToday()
+    }
+    document.addEventListener("visibilitychange", onVisible)
+    window.addEventListener("focus", refreshToday)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener("visibilitychange", onVisible)
+      window.removeEventListener("focus", refreshToday)
+    }
+  }, [])
+
   // Fetch true attendance states whenever the slot changes
   useEffect(() => {
+    let cancelled = false
+
     async function fetchSlotRecords() {
       const activeModule = modules.find((m) => m.module_number === activeModuleNumber)
       if (!activeModule || students.length === 0) return
@@ -119,6 +124,7 @@ export default function RollCallPage() {
         activeDayNumber,
         activeSessionNumber
       )
+      if (cancelled) return
 
       const loadedStates: Record<string, StudentSessionState> = {}
       records.forEach((row) => {
@@ -133,6 +139,9 @@ export default function RollCallPage() {
     }
 
     fetchSlotRecords()
+    return () => {
+      cancelled = true
+    }
   }, [activeModuleNumber, activeDayNumber, activeSessionNumber, students, modules])
 
   const activeModule = modules.find((m) => m.module_number === activeModuleNumber) || modules[0]
@@ -473,21 +482,4 @@ export default function RollCallPage() {
                 })
               } else if (!isReadOnly) {
                 toast.add({
-                  title: "Roll Call Complete",
-                  description: "All students have been logged.",
-                  type: "success",
-                })
-              }
-              router.push(`/classes/${classId}`)
-            }}
-            className={`h-12 px-8 rounded-2xl font-bold text-white shadow-soft active:scale-98 ${
-              isReadOnly ? "bg-muted-foreground" : "bg-primary"
-            }`}
-          >
-            {isReadOnly ? "Close" : "Done"}
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-}
+   
