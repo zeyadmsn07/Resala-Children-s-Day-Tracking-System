@@ -476,10 +476,21 @@ export default function RollCallPage() {
             onClick={() => {
               if (!isReadOnly && unmarkedCount > 0) {
                 toast.add({
-                  title: "Session Saved",
-                  description: `${totalMarked} students logged. ${unmarkedCount} remain unmarked.`,
-                  type: "info",
+                  title: "Roll Call Complete",
+                  description: "All students have been logged.",
+                  type: "success",
                 })
-              } else if (!isReadOnly) {
-                toast.add({
-   
+              }
+              router.push(`/classes/${classId}`)
+            }}
+            className={`h-12 px-8 rounded-2xl font-bold text-white shadow-soft active:scale-98 ${
+              isReadOnly ? "bg-muted-foreground" : "bg-primary"
+            }`}
+          >
+            {isReadOnly ? "Close" : "Done"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
