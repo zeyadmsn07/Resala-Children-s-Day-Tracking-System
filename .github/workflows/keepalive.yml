@@ -19,11 +19,20 @@ jobs:
         run: |
           # Ping the public keepalive RPC as specified in UI_SPEC-2 Section 9.6.
           # This keeps the Postgres database active without requiring table access.
-          response=$(curl -s -o /dev/null -w "%{http_code}" \
+          set +e
+          response=$(curl -sS -o /dev/null -w "%{http_code}" \
             --max-time 120 \
             -X POST "${SUPABASE_URL}/rest/v1/rpc/keepalive" \
             -H "apikey: ${SUPABASE_ANON_KEY}" \
             -H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
+
+          curl_exit_code=$?
+          set -e
+
+          if [ "$curl_exit_code" -ne 0 ]; then
+            echo "::warning::Keepalive request failed (curl exit code $curl_exit_code); skipping this run."
+            exit 0
+          fi
 
           echo "Supabase responded with HTTP $response"
 
